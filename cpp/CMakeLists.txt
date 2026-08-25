@@ -20,6 +20,10 @@ target_link_libraries(fcm1d_lib PUBLIC fcm_core)
 
 add_library(fcm3d_lib
         src/fcm3d/shape.cpp
+        src/fcm3d/config.cpp
+        src/fcm3d/quadrature.cpp
+        src/fcm3d/assembly.cpp
+        tests/fcm3d/assembly.cpp
 )
 target_link_libraries(fcm3d_lib PUBLIC fcm_core)
 
@@ -49,6 +53,7 @@ fcm_add_test(fcm1d assembly   fcm1d_lib)
 fcm_add_test(fcm1d solve      fcm1d_lib)
 
 fcm_add_test(fcm3d shape      fcm3d_lib)
+fcm_add_test(fcm3d assembly fcm3d_lib)
 
 find_package(Python3 COMPONENTS Interpreter)
 if(Python3_FOUND)
