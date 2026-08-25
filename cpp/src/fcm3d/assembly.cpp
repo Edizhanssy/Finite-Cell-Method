@@ -72,12 +72,76 @@ std::vector<double> element_stiffness(const Box& cell, const Config3D& cfg,
     return Ke;
 }
 
-std::vector<double> element_force(const Config3D& cfg,
+std::vector<double> element_force(const Box& cell, const Config3D& cfg,
                                   const std::vector<Mode3D>& modes,
                                   const CellQuadrature3D& q) {
     const std::size_t nm = modes.size();
     std::vector<double> Fe(3 * nm, 0.0);
-    return Fe;   // gecici: patch testinde govde yuku yok
+
+    double detJ = 1.0;
+    for (int d = 0; d < 3; ++d) {
+        const std::size_t s = static_cast<std::size_t>(d);
+        detJ *= 0.5 * (cell.hi[s] - cell.lo[s]);
+    }
+
+    for (std::size_t k = 0; k < q.xi.size(); ++k) {
+        const Vec3 f = cfg.body_load(q.x[k]);
+        if (f[0] == 0.0 && f[1] == 0.0 && f[2] == 0.0) continue;
+
+        const ShapeValues3D s =
+            shape_3d(cfg.p, modes, q.xi[k][0], q.xi[k][1], q.xi[k][2]);
+        const double scale = q.w[k] * detJ * q.mat[k];
+
+        for (std::size_t m = 0; m < nm; ++m)
+            for (int d = 0; d < 3; ++d)
+                Fe[3 * m + static_cast<std::size_t>(d)] +=
+                    s.N[m] * f[static_cast<std::size_t>(d)] * scale;
+    }
+    return Fe;
+}
+
+DenseMatrix assemble_stiffness(const Mesh3D& m, const Config3D& cfg,
+                               const std::vector<CellQuadrature3D>& quads) {
+    const std::vector<Mode3D> modes = enumerate_modes(cfg.p);
+    const std::size_t nm = modes.size();
+    const std::size_t ncol = 3 * nm;
+
+    DenseMatrix K(m.n_dof_total);
+    for (std::size_t e = 0; e < m.cells.size(); ++e) {
+        const std::vector<double> Ke =
+            element_stiffness(m.cells[e].box, cfg, modes, quads[e]);
+        const std::vector<int>& L = m.ltog[e];
+
+        for (std::size_t a = 0; a < nm; ++a)
+            for (int da = 0; da < 3; ++da) {
+                const int ga = 3 * L[a] + da;
+                for (std::size_t b = 0; b < nm; ++b)
+                    for (int db = 0; db < 3; ++db) {
+                        const int gb = 3 * L[b] + db;
+                        K(ga, gb) += Ke[(3 * a + static_cast<std::size_t>(da)) * ncol
+                                        + 3 * b + static_cast<std::size_t>(db)];
+                    }
+            }
+    }
+    return K;
+}
+
+std::vector<double> assemble_force(const Mesh3D& m, const Config3D& cfg,
+                                   const std::vector<CellQuadrature3D>& quads) {
+    const std::vector<Mode3D> modes = enumerate_modes(cfg.p);
+    const std::size_t nm = modes.size();
+
+    std::vector<double> F(static_cast<std::size_t>(m.n_dof_total), 0.0);
+    for (std::size_t e = 0; e < m.cells.size(); ++e) {
+        const std::vector<double> Fe =
+            element_force(m.cells[e].box, cfg, modes, quads[e]);
+        const std::vector<int>& L = m.ltog[e];
+        for (std::size_t a = 0; a < nm; ++a)
+            for (int d = 0; d < 3; ++d)
+                F[static_cast<std::size_t>(3 * L[a] + d)] +=
+                    Fe[3 * a + static_cast<std::size_t>(d)];
+    }
+    return F;
 }
 
 }  // namespace fcm

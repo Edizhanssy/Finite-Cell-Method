@@ -12,6 +12,8 @@ struct CellQuadrature3D {
     std::vector<double> mat;
 };
 
+/// Octree yapraklarindan tensor-carpim quadrature. Agirliklar HUCRE
+/// referans olcusunde: sum(w) = 8 (yani [-1,1]^3 hacmi).
 CellQuadrature3D build_cell_quadrature(const Box& cell, const Config3D& cfg);
 
 inline Vec3 map_to_cell(const Vec3& xi, const Box& cell) {
