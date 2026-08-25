@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-#include "fcm/fcm1d/assembly.hpp"
+#include "fcm/core/dense_matrix.hpp"
 
 namespace fcm {
 
