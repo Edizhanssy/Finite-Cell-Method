@@ -23,26 +23,35 @@ namespace fcm {
         q.xi.reserve(total); q.w.reserve(total);
         q.x.reserve(total);  q.mat.reserve(total);
 
+        q.ng = static_cast<int>(ng);
+        q.leaf_xi1d.reserve(leaves.size());
+
         for (const Box& leaf : leaves) {
-            // yaprak -> hucre referans olcegi
             double jleaf = 1.0;
             for (int d = 0; d < 3; ++d) {
                 const std::size_t s = static_cast<std::size_t>(d);
                 jleaf *= (leaf.hi[s] - leaf.lo[s]) / (cell.hi[s] - cell.lo[s]);
             }
 
+            std::array<std::vector<double>, 3> xg1d, xi1d;
+            for (int d = 0; d < 3; ++d) {
+                const std::size_t s = static_cast<std::size_t>(d);
+                xg1d[s].resize(ng);
+                xi1d[s].resize(ng);
+                for (std::size_t a = 0; a < ng; ++a) {
+                    const double xgv = 0.5 * ((1.0 - g.points[a]) * leaf.lo[s]
+                                            + (1.0 + g.points[a]) * leaf.hi[s]);
+                    xg1d[s][a] = xgv;
+                    xi1d[s][a] = to_ref(xgv, cell.lo[s], cell.hi[s]);
+                }
+            }
+            q.leaf_xi1d.push_back(xi1d);
+
             for (std::size_t a = 0; a < ng; ++a)
                 for (std::size_t b = 0; b < ng; ++b)
                     for (std::size_t c = 0; c < ng; ++c) {
-                        const Vec3 xg{
-                            0.5 * ((1.0 - g.points[a]) * leaf.lo[0] + (1.0 + g.points[a]) * leaf.hi[0]),
-                            0.5 * ((1.0 - g.points[b]) * leaf.lo[1] + (1.0 + g.points[b]) * leaf.hi[1]),
-                            0.5 * ((1.0 - g.points[c]) * leaf.lo[2] + (1.0 + g.points[c]) * leaf.hi[2])};
-
-                        const Vec3 xi{to_ref(xg[0], cell.lo[0], cell.hi[0]),
-                                      to_ref(xg[1], cell.lo[1], cell.hi[1]),
-                                      to_ref(xg[2], cell.lo[2], cell.hi[2])};
-
+                        const Vec3 xg{xg1d[0][a], xg1d[1][b], xg1d[2][c]};
+                        const Vec3 xi{xi1d[0][a], xi1d[1][b], xi1d[2][c]};
                         q.xi.push_back(xi);
                         q.w.push_back(g.weights[a] * g.weights[b] * g.weights[c] * jleaf);
                         q.x.push_back(xg);

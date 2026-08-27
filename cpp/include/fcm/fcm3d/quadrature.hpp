@@ -10,6 +10,10 @@ struct CellQuadrature3D {
     std::vector<double> w;
     std::vector<Vec3>   x;
     std::vector<double> mat;
+    /// Tensor yapisi. Nokta indeksi: k = leaf*ng^3 + (a*ng + b)*ng + c
+    int ng = 0;
+    /// [yaprak][eksen] -> ng adet hucre-referans koordinati
+    std::vector<std::array<std::vector<double>, 3>> leaf_xi1d;
 };
 
 /// Octree yapraklarindan tensor-carpim quadrature. Agirliklar HUCRE
