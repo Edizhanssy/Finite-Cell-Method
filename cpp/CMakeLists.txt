@@ -70,7 +70,11 @@ fcm_add_test(fcm3d solve fcm3d_lib)
 
 find_package(Python3 COMPONENTS Interpreter)
 if(Python3_FOUND)
-    add_test(NAME validation_1d_end_to_end
+    add_test(NAME validation_1d_cpp
             COMMAND ${Python3_EXECUTABLE} check_validation.py $<TARGET_FILE:fcm1d>
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/python/FCM1D)
+
+    add_test(NAME validation_1d_python
+            COMMAND ${Python3_EXECUTABLE} check_validation.py
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/python/FCM1D)
 endif()
