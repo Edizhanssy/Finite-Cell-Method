@@ -28,12 +28,16 @@ void strain_displacement(const ShapeValues3D& s, const Vec3& jac,
     }
 }
 
+
 std::vector<double> element_stiffness(const Box& cell, const Config3D& cfg,
                                       const std::vector<Mode3D>& modes,
                                       const CellQuadrature3D& q) {
     const std::size_t nm   = modes.size();
     const std::size_t ncol = 3 * nm;
-    const std::array<double, 36> C = cfg.elasticity();
+
+    // Izotropik Lame katsayilari. Anizotropi gerekirse genel C yolu lazim.
+    const double lam = cfg.E * cfg.nu / ((1.0 + cfg.nu) * (1.0 - 2.0 * cfg.nu));
+    const double mu  = cfg.E / (2.0 * (1.0 + cfg.nu));
 
     Vec3 jac{};
     double detJ = 1.0;
@@ -44,33 +48,51 @@ std::vector<double> element_stiffness(const Box& cell, const Config3D& cfg,
     }
 
     std::vector<double> Ke(ncol * ncol, 0.0);
-    std::vector<double> B, CB(6 * ncol);
+    std::vector<double> gx(nm), gy(nm), gz(nm);
 
     for (std::size_t k = 0; k < q.xi.size(); ++k) {
         const ShapeValues3D s =
             shape_3d(cfg.p, modes, q.xi[k][0], q.xi[k][1], q.xi[k][2]);
-        strain_displacement(s, jac, B);
 
-        const double scale = q.w[k] * detJ * q.mat[k];
+        for (std::size_t m = 0; m < nm; ++m) {
+            gx[m] = s.dNdxi[m]   / jac[0];
+            gy[m] = s.dNdeta[m]  / jac[1];
+            gz[m] = s.dNdzeta[m] / jac[2];
+        }
 
-        for (std::size_t r = 0; r < 6; ++r)
-            for (std::size_t c = 0; c < ncol; ++c) {
-                double v = 0.0;
-                for (std::size_t t = 0; t < 6; ++t)
-                    v += C[r * 6 + t] * B[t * ncol + c];
-                CB[r * ncol + c] = v * scale;
+        const double w  = q.w[k] * detJ * q.mat[k];
+        const double wl = w * lam;
+        const double wm = w * mu;
+
+        for (std::size_t a = 0; a < nm; ++a) {
+            const double ax = gx[a], ay = gy[a], az = gz[a];
+            const std::size_t ra = 3 * a;
+
+            for (std::size_t b = a; b < nm; ++b) {
+                const double bx = gx[b], by = gy[b], bz = gz[b];
+                const double dot = wm * (ax * bx + ay * by + az * bz);
+                const std::size_t rb = 3 * b;
+
+                const double blk[3][3] = {
+                    {wl*ax*bx + wm*ax*bx + dot, wl*ax*by + wm*ay*bx, wl*ax*bz + wm*az*bx},
+                    {wl*ay*bx + wm*ax*by, wl*ay*by + wm*ay*by + dot, wl*ay*bz + wm*az*by},
+                    {wl*az*bx + wm*ax*bz, wl*az*by + wm*ay*bz, wl*az*bz + wm*az*bz + dot}};
+
+                for (int i = 0; i < 3; ++i)
+                    for (int j = 0; j < 3; ++j) {
+                        const double v = blk[i][j];
+                        Ke[(ra + static_cast<std::size_t>(i)) * ncol
+                           + rb + static_cast<std::size_t>(j)] += v;
+                        if (a != b)
+                            Ke[(rb + static_cast<std::size_t>(j)) * ncol
+                               + ra + static_cast<std::size_t>(i)] += v;
+                    }
             }
-
-        for (std::size_t i = 0; i < ncol; ++i)
-            for (std::size_t j = 0; j < ncol; ++j) {
-                double v = 0.0;
-                for (std::size_t r = 0; r < 6; ++r)
-                    v += B[r * ncol + i] * CB[r * ncol + j];
-                Ke[i * ncol + j] += v;
-            }
+        }
     }
     return Ke;
 }
+
 
 std::vector<double> element_force(const Box& cell, const Config3D& cfg,
                                   const std::vector<Mode3D>& modes,

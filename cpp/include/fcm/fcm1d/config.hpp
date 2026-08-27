@@ -23,8 +23,8 @@ namespace fcm {
         double E          = 1.0;
         double A          = 1.0;
         double alpha      = 1e-8;
-        int    p          = 4;
-        int    max_depth  = 4;
+        int    p          = 15;
+        int    max_depth  = 10;
         double penalty    = 1e5;
         double disp_load  = -1.0;
 
