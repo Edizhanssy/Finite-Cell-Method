@@ -30,6 +30,7 @@ add_library(fcm3d_lib
         tests/fcm3d/partition.cpp
         src/fcm3d/solver.cpp
         tests/fcm3d/solve.cpp
+        apps/fcm3d.cpp
 )
 target_link_libraries(fcm3d_lib PUBLIC fcm_core)
 
@@ -37,6 +38,9 @@ target_link_libraries(fcm3d_lib PUBLIC fcm_core)
 
 add_executable(fcm1d apps/fcm1d.cpp)
 target_link_libraries(fcm1d PRIVATE fcm1d_lib)
+
+add_executable(fcm3d apps/fcm3d.cpp)
+target_link_libraries(fcm3d PRIVATE fcm3d_lib)
 
 # ---- tests ---------------------------------------------------------------
 

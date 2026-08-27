@@ -8,8 +8,8 @@ class Config:
     E: float = 1.0
     A: float = 1.0
     alpha: float = 1e-8
-    p: int = 15
-    max_depth: int = 10
+    p: int = 4
+    max_depth: int = 4
     penalty: float = 1e5
 
     # (x_start, x_end, material_id) - 0: physical, 1: fictitious
