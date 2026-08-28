@@ -11,6 +11,11 @@ struct Box {
     Vec3 hi;
 };
 
+struct Sphere {
+    Vec3   center;
+    double radius;
+};
+
 struct Config3D {
     Vec3 lo{0.0, 0.0, 0.0};
     Vec3 hi{3.0, 1.0, 1.0};
@@ -40,6 +45,8 @@ struct Config3D {
     Vec3   body_load(const Vec3& x) const;
 
     std::array<double, 36> elasticity() const;
+    std::vector<Sphere> fictitious_spheres{};
+
 };
 
 }  // namespace fcm

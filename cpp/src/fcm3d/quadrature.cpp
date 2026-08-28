@@ -6,7 +6,7 @@
 namespace fcm {
     namespace {
 
-        /// [lo,hi] araligini [-1,1]'e goturur.
+        // linear mapping the domain to [-1, 1]!!
         double to_ref(double x, double lo, double hi) {
             return 2.0 * (x - lo) / (hi - lo) - 1.0;
         }

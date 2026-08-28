@@ -5,7 +5,7 @@
 
 namespace fcm {
 
-/// Kesik hucrelerde octree bolme; kesilmeyen bolgeler tek yaprak kalir.
+// Octree partition on cut-cells
 std::vector<Box> partition_cell(const Box& cell, const Config3D& cfg);
 
 }  // namespace fcm

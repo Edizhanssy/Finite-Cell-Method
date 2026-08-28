@@ -21,7 +21,6 @@ std::map<std::array<int,3>, std::size_t> mode_index(const std::vector<fcm::Mode3
     return mi;
 }
 
-/// d ekseninde komsu iki hucrenin paylastigi DOF'lari dogrular.
 void check_sharing(const fcm::Mesh3D& msh, const std::vector<fcm::Mode3D>& modes,
                    int cellA, int cellB, int d, const char* label) {
     const auto mi = mode_index(modes);
@@ -29,7 +28,6 @@ void check_sharing(const fcm::Mesh3D& msh, const std::vector<fcm::Mode3D>& modes
     const std::vector<int>& A = msh.ltog[static_cast<std::size_t>(cellA)];
     const std::vector<int>& B = msh.ltog[static_cast<std::size_t>(cellB)];
 
-    // A'nin +1 yuzu (d ekseninde indeks 1) <-> B'nin -1 yuzu (indeks 0)
     int matched = 0;
     for (int u = 0; u <= p; ++u)
         for (int v = 0; v <= p; ++v) {
@@ -46,41 +44,37 @@ void check_sharing(const fcm::Mesh3D& msh, const std::vector<fcm::Mode3D>& modes
                             label, ka[0],ka[1],ka[2], kb[0],kb[1],kb[2], A[ma], B[mb]);
             ++matched;
         }
-    check(matched == (p + 1) * (p + 1), "paylasilan yuz modu sayisi", matched, (p+1)*(p+1));
+    check(matched == (p + 1) * (p + 1), "shared face mode number", matched, (p+1)*(p+1));
 
-    // Toplam paylasim: 4 dugum + 4q kenar + q^2 yuz
     std::set<int> sa(A.begin(), A.end()), sb(B.begin(), B.end()), inter;
     for (int x : sa) if (sb.count(x)) inter.insert(x);
     const long expect = 4 + 4L * q + static_cast<long>(q) * q;
-    check(static_cast<long>(inter.size()) == expect, "paylasilan toplam DOF",
+    check(static_cast<long>(inter.size()) == expect, "total DOF",
           static_cast<long>(inter.size()), expect);
 }
 
 }  // namespace
 
 int main() {
-    // ---- 1) tek hucre: n_dof == (p+1)^3 ----------------------------------
+
     for (int p = 2; p <= 5; ++p) {
         fcm::Config3D cfg;
         cfg.p = p;
         cfg.n_elements = {1, 1, 1};
         const fcm::Mesh3D msh = fcm::build_mesh(cfg);
-        check(msh.n_dof == msh.n_modes, "tek hucre n_dof = n_modes",
+        check(msh.n_dof == msh.n_modes, "one cell num dof = num modes",
               msh.n_dof, msh.n_modes);
     }
 
-    // ---- 2) elle hesaplanmis kucuk ornek ----------------------------------
     {
         fcm::Config3D cfg;
         cfg.p = 2;
         cfg.n_elements = {2, 1, 1};
         const fcm::Mesh3D msh = fcm::build_mesh(cfg);
-        // 12 dugum + 20 kenar + 11 yuz + 2 hacim = 45
         check(msh.n_dof == 45, "2x1x1 p=2 n_dof", msh.n_dof, 45);
-        check(msh.n_dof_total == 135, "vektor DOF", msh.n_dof_total, 135);
+        check(msh.n_dof_total == 135, "vector DOF", msh.n_dof_total, 135);
     }
 
-    // ---- 3) genel izgara: aralik, teklik, ortusme, paylasim ----------------
     for (int p = 2; p <= 4; ++p) {
         fcm::Config3D cfg;
         cfg.p = p;
@@ -88,7 +82,7 @@ int main() {
         const fcm::Mesh3D msh = fcm::build_mesh(cfg);
         const std::vector<fcm::Mode3D> modes = fcm::enumerate_modes(p);
 
-        check(msh.cells.size() == 8, "hucre sayisi",
+        check(msh.cells.size() == 8, "cell count",
               static_cast<long>(msh.cells.size()), 8);
 
         std::set<int> all;
@@ -102,12 +96,11 @@ int main() {
             }
             if (static_cast<int>(s.size()) != msh.n_modes) unique_in_cell = false;
         }
-        check(in_range,       "tum DOF aralikta");
-        check(unique_in_cell, "hucre icinde tekrar yok");
-        check(static_cast<long>(all.size()) == msh.n_dof, "her DOF en az bir hucrede",
+        check(in_range,       "all DOF is in range");
+        check(unique_in_cell, "there are no duplicates in cells");
+        check(static_cast<long>(all.size()) == msh.n_dof, "every DOF is in one cell",
               static_cast<long>(all.size()), msh.n_dof);
 
-        // hucre sirasi (i*ny+j)*nz+k, ny=nz=2
         check_sharing(msh, modes, 0, 4, 0, "x");   // (0,0,0)-(1,0,0)
         check_sharing(msh, modes, 0, 2, 1, "y");   // (0,0,0)-(0,1,0)
         check_sharing(msh, modes, 0, 1, 2, "z");   // (0,0,0)-(0,0,1)

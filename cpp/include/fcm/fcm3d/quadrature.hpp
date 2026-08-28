@@ -10,14 +10,14 @@ struct CellQuadrature3D {
     std::vector<double> w;
     std::vector<Vec3>   x;
     std::vector<double> mat;
-    /// Tensor yapisi. Nokta indeksi: k = leaf*ng^3 + (a*ng + b)*ng + c
+    // Tensor structure. Node index is: k = leaf*ng^3 + (a*ng + b)*ng + c
     int ng = 0;
-    /// [yaprak][eksen] -> ng adet hucre-referans koordinati
+    // [leap][axis] -> ng times cell-referenced coordinates
     std::vector<std::array<std::vector<double>, 3>> leaf_xi1d;
 };
 
-/// Octree yapraklarindan tensor-carpim quadrature. Agirliklar HUCRE
-/// referans olcusunde: sum(w) = 8 (yani [-1,1]^3 hacmi).
+// Octree leafes tensor-multiplying quadrature.
+// referans solution: sum(w) = 8
 CellQuadrature3D build_cell_quadrature(const Box& cell, const Config3D& cfg);
 
 inline Vec3 map_to_cell(const Vec3& xi, const Box& cell) {

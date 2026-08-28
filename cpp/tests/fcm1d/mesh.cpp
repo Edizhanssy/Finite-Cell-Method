@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
     ++checked;
     if (m.n_dof != 31) {
         ++failed;
-        std::printf("FAIL n_dof = %d, beklenen 31\n", m.n_dof);
+        std::printf("FAIL n_dof = %d, expected 31\n", m.n_dof);
     }
 
     std::ifstream in(dir + "/ltog_1d.txt");

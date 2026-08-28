@@ -15,6 +15,15 @@ bool Config3D::inside_fictitious(const Vec3& x) const {
             }
         if (in) return true;
     }
+        for (const Sphere& s : fictitious_spheres) {
+            double r2 = 0.0;
+            for (int d = 0; d < 3; ++d) {
+                const std::size_t i = static_cast<std::size_t>(d);
+                const double t = x[i] - s.center[i];
+                r2 += t * t;
+            }
+            if (r2 < s.radius * s.radius) return true;
+        }
     return false;
 }
 

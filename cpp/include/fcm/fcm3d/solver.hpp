@@ -10,8 +10,6 @@
 
 namespace fcm {
 
-/// Dugum DOF'una uygulanan Dirichlet kosulu.
-/// pred(x): bu dugum kosula tabi mi;  value(x, dir): dayatilacak deger.
 struct DirichletBC {
     std::function<bool(const Vec3&)>          pred;
     std::function<double(const Vec3&, int)>   value;
@@ -29,10 +27,8 @@ struct SolveResult3D {
 
 SolveResult3D solve(const Config3D& cfg, const std::vector<DirichletBC>& bcs);
 
-/// Global dugum DOF indeksi -> global koordinat (yalniz dugum modlari).
 std::vector<Vec3> node_coordinates(const Mesh3D& m, const Config3D& cfg);
 
-/// Verilen global noktada yer degistirme vektoru.
 Vec3 displacement_at(const Config3D& cfg, const Mesh3D& m,
                      const std::vector<double>& u, const Vec3& x);
 

@@ -67,7 +67,7 @@ std::vector<double> element_stiffness(const Box& cell, const Config3D& cfg,
     }
 
     for (std::size_t leaf = 0; leaf < q.leaf_xi1d.size(); ++leaf) {
-        // yaprak basina 1D tablolar
+        // 1d tables for each leaf!
         for (int d = 0; d < 3; ++d) {
             const std::size_t s = static_cast<std::size_t>(d);
             for (std::size_t a = 0; a < ng; ++a) {

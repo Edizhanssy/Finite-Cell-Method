@@ -72,7 +72,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    // Tablodan bagimsiz kontroller
     for (std::size_t e = 0; e < Ke.size(); ++e) {
         double scale = 0.0;
         for (double v : Ke[e]) scale = std::max(scale, std::fabs(v));

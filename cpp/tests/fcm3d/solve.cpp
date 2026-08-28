@@ -13,8 +13,6 @@ void check(bool ok, const char* what, double a = 0, double b = 0) {
 }  // namespace
 
 int main() {
-    // Patch testi: u = (a*x, b*y, c*z), tum sinir dugumlerinde dayatilir.
-    // nu = 0 icin sabit gerinim tam uretilmeli, ic modlar sifir olmali.
     const double A = 0.013, Bc = -0.007, Cc = 0.021;
 
     fcm::Config3D cfg;
@@ -41,7 +39,7 @@ int main() {
     };
 
     const fcm::SolveResult3D r = fcm::solve(cfg, {bc});
-    check(r.n_constrained > 0, "kisitli DOF var", r.n_constrained, 0);
+    check(r.n_constrained > 0, "limited dof exists", r.n_constrained, 0);
 
     {
         int n_nodal = 0, n_high = 0, n_bnd_nodal = 0, n_bnd_high = 0;
@@ -55,7 +53,6 @@ int main() {
                     r.mesh.n_dof, n_nodal, n_bnd_nodal, n_high, n_bnd_high, r.n_constrained);
     }
 
-    // 1) Ic DOF'lar (kenar/yuz/hacim) sifir olmali
     double worst_int = 0.0, scale = 0.0;
     for (double v : r.u) scale = std::fmax(scale, std::fabs(v));
     for (int nd = r.mesh.off_edge; nd < r.mesh.n_dof; ++nd)
@@ -64,7 +61,6 @@ int main() {
                 std::fabs(r.u[static_cast<std::size_t>(3 * nd + d)]));
     check(worst_int < 1e-8, "ic mod katsayilari sifir", worst_int, 0.0);
 
-    // 2) Rastgele noktalarda tam lineer alan
     unsigned seed = 987u;
     auto rnd = [&seed]() {
         seed = seed * 1103515245u + 12345u;
@@ -81,7 +77,7 @@ int main() {
             worst_u = std::fmax(worst_u,
                 std::fabs(uu[static_cast<std::size_t>(d)] - ex[d]));
     }
-    check(worst_int < 1e-8, "ic mod katsayilari sifir", worst_int, 0.0);
+    check(worst_int < 1e-8, "internal modes are zero", worst_int, 0.0);
 
     std::printf("worst interior coeff: %.3e   worst u error: %.3e\n", worst_int, worst_u);
     if (checked < 3) { std::printf("FAILED  solve3d: only %d checks\n", checked); return 2; }

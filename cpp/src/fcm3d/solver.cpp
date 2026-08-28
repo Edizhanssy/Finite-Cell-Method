@@ -47,8 +47,7 @@ SolveResult3D solve(const Config3D& cfg, const std::vector<DirichletBC>& bcs) {
             for (int d = 0; d < 3; ++d) {
                 if (!bc.dirs[static_cast<std::size_t>(d)]) continue;
                 const int g = 3 * nd + d;
-                // Yuksek mertebeli modlar sifir: dayatilan alan dugum
-                // modlariyla tam temsil ediliyor.
+
                 const double val = nodal ? bc.value(x, d) : 0.0;
                 r.K(g, g) += cfg.penalty;
                 r.F[static_cast<std::size_t>(g)] += cfg.penalty * val;
@@ -88,7 +87,7 @@ Vec3 displacement_at(const Config3D& cfg, const Mesh3D& m,
                     sv.N[a] * u[static_cast<std::size_t>(3 * m.ltog[e][a] + d)];
         return res;
     }
-    throw std::runtime_error("displacement_at: nokta hicbir hucrede degil");
+    throw std::runtime_error("displacement_at: point is not in the domain");
 }
 
 }  // namespace fcm

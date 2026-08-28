@@ -5,7 +5,7 @@ namespace fcm {
     Mesh build_mesh(const Config& cfg) {
         Mesh m;
         const int ne         = cfg.n_elements;
-        const int n_internal = cfg.p - 1;   // kenar basina ic mod sayisi
+        const int n_internal = cfg.p - 1;
 
         m.node_local.resize(static_cast<std::size_t>(ne) + 1);
         for (int i = 0; i <= ne; ++i)

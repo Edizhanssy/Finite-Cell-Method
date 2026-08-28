@@ -15,7 +15,7 @@ void check(bool ok, const char* what, double a = 0.0, double b = 0.0) {
         std::printf("FAIL %-34s  %.6e vs %.6e\n", what, a, b);
 }
 
-/// Ke * v  (Ke satir-oncelikli, n x n)
+// Ke * v
 std::vector<double> matvec(const std::vector<double>& Ke, const std::vector<double>& v) {
     const std::size_t n = v.size();
     std::vector<double> r(n, 0.0);
@@ -39,7 +39,7 @@ int main() {
     fcm::Config3D cfg;
     cfg.p  = 3;
     cfg.E  = 2.5;
-    cfg.nu = 0.0;                       // patch testi genel nu ile de gecmeli
+    cfg.nu = 0.0;
 
     const fcm::Box cell{{0.0, 0.0, 0.0}, {2.0, 1.5, 0.5}};
     const std::vector<fcm::Mode3D> modes = fcm::enumerate_modes(cfg.p);
@@ -49,7 +49,7 @@ int main() {
     const std::size_t nm = modes.size();
     const std::size_t n  = 3 * nm;
 
-    // ---- 1) boyutlar ------------------------------------------------------
+    // ---- 1) sizes ------------------------------------------------------
     check(q.xi.size() == static_cast<std::size_t>(cfg.n_gauss() * cfg.n_gauss() * cfg.n_gauss()),
           "quadrature nokta sayisi",
           static_cast<double>(q.xi.size()),
@@ -57,7 +57,7 @@ int main() {
     check(Ke.size() == n * n, "Ke boyutu",
           static_cast<double>(Ke.size()), static_cast<double>(n * n));
 
-    // ---- 2) agirlik toplami = hucre hacmi ---------------------------------
+    // ---- 2) total weight = volume of the cell ---------------------------------
     {
         double vol = 0.0, detJ = 1.0;
         for (double w : q.w) vol += w;
@@ -73,7 +73,7 @@ int main() {
     double scale = 0.0;
     for (double v : Ke) scale = std::fmax(scale, std::fabs(v));
 
-    // ---- 3) simetri -------------------------------------------------------
+    // ---- 3) symmetry ------------------
     {
         double worst = 0.0;
         for (std::size_t i = 0; i < n; ++i)
@@ -82,9 +82,8 @@ int main() {
         check(worst < 1e-11 * scale, "Ke simetrik", worst, 0.0);
     }
 
-    // ---- 4) alti rijit cisim modu ----------------------------------------
-    // Dugum modlari birim bolusum sagladigi icin sabit alan yalniz
-    // dugum modlarindan kurulur; donme icin nodal koordinatlar gerekir.
+    // ---- 4) six rigid body modes ------------
+
     {
         std::vector<fcm::Vec3> node_x;
         for (const fcm::Mode3D& m : modes) {
@@ -94,11 +93,11 @@ int main() {
                                m.k == 0 ? -1.0 : 1.0};
             node_x.push_back(fcm::map_to_cell(xi, cell));
         }
-        check(node_x.size() == 8, "dugum modu sayisi",
+        check(node_x.size() == 8, "number of modes:",
               static_cast<double>(node_x.size()), 8.0);
 
-        const char* names[6] = {"oteleme x", "oteleme y", "oteleme z",
-                                "donme x", "donme y", "donme z"};
+        const char* names[6] = {"displacement x", "displacement y", "displacement z",
+                                "torsion x", "torsion y", "torsion z"};
         for (int mode = 0; mode < 6; ++mode) {
             std::vector<double> u(n, 0.0);
             std::size_t nd = 0;
@@ -110,9 +109,9 @@ int main() {
                     case 0: c[0] = 1.0; break;
                     case 1: c[1] = 1.0; break;
                     case 2: c[2] = 1.0; break;
-                    case 3: c[1] = -X[2]; c[2] =  X[1]; break;   // x ekseni
-                    case 4: c[0] =  X[2]; c[2] = -X[0]; break;   // y ekseni
-                    case 5: c[0] = -X[1]; c[1] =  X[0]; break;   // z ekseni
+                    case 3: c[1] = -X[2]; c[2] =  X[1]; break;   // x axis
+                    case 4: c[0] =  X[2]; c[2] = -X[0]; break;   // y axis
+                    case 5: c[0] = -X[1]; c[1] =  X[0]; break;   // z axis
                 }
                 for (int d = 0; d < 3; ++d) u[3*m + static_cast<std::size_t>(d)] = c[d];
             }
@@ -121,9 +120,8 @@ int main() {
         }
     }
 
-    // ---- 5) patch testi: sabit gerinim ------------------------------------
-    // u = (a*x, b*y, c*z) dayat; ic modlar sifir, gerinim sabit,
-    // ve Ke*u sadece yuzey (dugum) DOF'larinda tepki uretir -> ic satirlar 0.
+    // ---- 5) patch test !! ----------
+    // u = (a*x, b*y, c*z). Internal modes are constant
     {
         const double a = 0.013, b = -0.007, c = 0.021;
         std::vector<double> u(n, 0.0);
@@ -139,9 +137,8 @@ int main() {
             u[3*m + 2] = c * X[2];
             ++nd;
         }
-        check(nd == 8, "patch: dugum sayisi", static_cast<double>(nd), 8.0);
+        check(nd == 8, "patch: mesh size", static_cast<double>(nd), 8.0);
 
-        // (a) geri kazanilan gerinim her quadrature noktasinda sabit
         fcm::Vec3 jac{};
         for (int d = 0; d < 3; ++d)
             jac[static_cast<std::size_t>(d)] =
@@ -162,13 +159,7 @@ int main() {
         }
         check(worst_eps < 1e-12, "patch: sabit gerinim", worst_eps, 0.0);
 
-        // (b) ic modlarin satirlarinda tepki yok
         const std::vector<double> f = matvec(Ke, u);
-        // (b) ic modun KENDI yonundeki tepkisi sifir olmali:
-        // int dN_i/dx_d dV = 0, ancak d ekseninde mod ic mod ise.
-        // Diger yonlerde sifir olmasi gerekmez: tensor carpimin sinir
-        // faktorleri [N]_{-1}^{+1} sifirlanmaz.
-        //const std::vector<double> f = matvec(Ke, u);
 
         double worst_own = 0.0, surf = 0.0;
         for (std::size_t m = 0; m < nm; ++m) {
@@ -179,8 +170,8 @@ int main() {
                 if (modes[m].kind == fcm::ModeKind::Node) surf = std::fmax(surf, v);
             }
         }
-        check(worst_own < 1e-10 * scale, "patch: kendi yonunde tepki yok", worst_own, 0.0);
-        check(surf > 1e-6 * scale,       "patch: yuzeyde tepki var",       surf, 0.0);
+        check(worst_own < 1e-10 * scale, "patch: does not have effect on its own axis, worst_own, 0.0);
+        check(surf > 1e-6 * scale,       "patch: effect on the surface",       surf, 0.0);
         //check(worst_int < 1e-10 * scale, "patch: ic mod tepkisi sifir", worst_int, 0.0);
         //check(surf > 1e-6 * scale, "patch: yuzeyde tepki var", surf, 0.0);
 
@@ -188,12 +179,11 @@ int main() {
         for (int d = 0; d < 3; ++d) {
             double s = 0.0;
             for (std::size_t m = 0; m < nm; ++m) s += f[3*m + static_cast<std::size_t>(d)];
-            check(std::fabs(s) < 1e-10 * scale, "patch: kuvvet dengesi", s, 0.0);
+            check(std::fabs(s) < 1e-10 * scale, "patch: stability of the force", s, 0.0);
         }
     }
 
     if (checked < 15) { std::printf("FAILED  assembly3d: only %d checks\n", checked); return 2; }
-    std::printf("%s  assembly3d: %d checks, %d failures\n",
-                failed ? "FAILED" : "PASSED", checked, failed);
+    std::printf("%s  assembly3d: %d checks, %d failures\n", failed ? "FAILED" : "PASSED", checked, failed);
     return failed ? 1 : 0;
 }

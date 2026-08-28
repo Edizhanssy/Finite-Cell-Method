@@ -17,28 +17,29 @@ int main() {
     cfg.max_depth = 4;
     cfg.penalty   = 1e5;
 
-    // Fiktif dilim: x in [1, 7/3], y ve z tam kapsam
+    // Fictitious slice: x in [1, 7/3]
     cfg.fictitious = {{{1.0, -1.0, -1.0}, {7.0 / 3.0, 2.0, 2.0}}};
 
-    // f_sin = (1/20) sin(4 pi x), yalniz ilk fiziksel cubukta
+    // f_sin = (1/20) * sin(4 pi x)
     cfg.load_span0 = 0.0;
     cfg.load_span1 = 1.0;
     cfg.load_amp   = 1.0 / 20.0;
     cfg.load_freq  = 4.0 * 3.14159265358979323846;
 
-    // x = 0: tam ankastre (uc rijit cisim modunu da kilitler)
+    // Dirichlet Boundary Conditions
     fcm::DirichletBC left;
     left.pred  = [](const fcm::Vec3& x) { return std::fabs(x[0]) < 1e-12; };
-    left.value = [](const fcm::Vec3&, int) { return 0.0; };
+    left.value = [](const fcm::Vec3&, int) { return 0.0; };#
 
-    // x = 3: u_x = -1, yanal serbest
     fcm::DirichletBC right;
     right.pred  = [&](const fcm::Vec3& x) { return std::fabs(x[0] - cfg.hi[0]) < 1e-12; };
     right.value = [](const fcm::Vec3&, int d) { return d == 0 ? -1.0 : 0.0; };
     right.dirs  = {true, false, false};
 
+    // solve!!
     const fcm::SolveResult3D r = fcm::solve(cfg, {left, right});
 
+    // spreading quadrature nodes to interpolate!!
     std::size_t npts = 0;
     for (const fcm::CellQuadrature3D& q : r.quads) npts += q.xi.size();
     std::printf("cells=%zu  quad points=%zu  DOF=%d\n",

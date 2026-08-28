@@ -3,7 +3,7 @@
 namespace fcm {
     namespace {
 
-        constexpr int kSeed = 5;      // eksen basina; 5^3 = 125 tohum
+        constexpr int kSeed = 5;      // for each axis: 5^3 = 125 seeds
 
         bool is_cut(const Box& b, const Config3D& cfg) {
             bool first = false, init = false;
