@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
     const fcm::Vec3 C{0.5, 0.5, 0.5};
     cfg.fictitious_spheres = {{C, R}};
 
+
     const double eps0 = 0.001;
 
     // Bottom Dirichlet Boundary Condition
@@ -50,7 +51,6 @@ int main(int argc, char** argv) {
 
     std::size_t npts = 0;
     for (const fcm::CellQuadrature3D& q : r.quads) npts += q.xi.size();
-    std::printf("p=%d depth=%d cells=%d^3  DOF=%d  quad points=%zu\n", p, dep, ne, r.mesh.n_dof_total, npts);
 
     // At the center (z = zc) which is close the surface of the sphere sigma_zz, along theta
     const double nu = cfg.nu;
@@ -59,20 +59,26 @@ int main(int argc, char** argv) {
     const double s_far = cfg.E * eps0;
     const double off = argc > 4 ? std::atof(argv[4]) : 1.02;
 
+    std::printf("p=%d depth=%d cells=%d^3  off=%.2f  R=%.3f  DOF=%d  quad=%zu\n",
+            p, dep, ne, off, R, r.mesh.n_dof_total, npts);
+
     std::printf("# theta_deg  sigma_zz/far\n");
-    double ssum = 0.0;
-    for (int t = 0; t < 72; ++t) {
-        const double th = t * 2.0 * M_PI / 72.0;
+    double smax = 0.0, smin = 1e300, ssum = 0.0;
+    const int NT = 72;
+    for (int t = 0; t < NT; ++t) {
+        const double th = t * 2.0 * M_PI / NT;
         const fcm::Vec3 x{C[0] + off * R * std::cos(th),
                           C[1] + off * R * std::sin(th),
                           C[2]};
         const std::array<double, 6> e = fcm::strain_at(cfg, r.mesh, r.u, x);
-        const double tr = e[0] + e[1] + e[2];
+        const double tr  = e[0] + e[1] + e[2];
         const double szz = lam * tr + 2.0 * mu * e[2];
         if (t % 6 == 0) std::printf("%6.1f  %10.4f\n", th * 180.0 / M_PI, szz / s_far);
+        smax  = std::fmax(smax, szz);
+        smin  = std::fmin(smin, szz);
         ssum += szz;
     }
-    const double savg = ssum / 72.0;
+    const double savg = ssum / NT;
 
     // Radial cut!!
     std::printf("# r/R  sigma_zz/far\n");
@@ -86,9 +92,17 @@ int main(int argc, char** argv) {
     }
 
     const double scf_exact = (27.0 - 15.0 * nu) / (2.0 * (7.0 - 5.0 * nu));
-    std::printf("sigma_zz max = %.6e   far field = %.6e\n", savg, s_far);
-    std::printf("SCF = %.4f   analytic = %.4f   error = %.2f%%\n",
-                savg / s_far, scf_exact,
-                100.0 * (savg / s_far - scf_exact) / scf_exact);
+    const double aniso = 100.0 * (smax - smin) / savg;
+
+    std::printf("SCF: avg %.4f (%+.2f%%)   max %.4f (%+.2f%%)   "
+                "anisotropy %.1f%%   analytic %.4f\n",
+                savg / s_far, 100.0 * (savg / s_far - scf_exact) / scf_exact,
+                smax / s_far, 100.0 * (smax / s_far - scf_exact) / scf_exact,
+                aniso, scf_exact);
+
+    std::printf("CSV,%d,%d,%d,%.2f,%.3f,%d,%zu,%.6f,%.6f,%.6f,%.6f\n",
+            p, dep, ne, off, R, r.mesh.n_dof_total, npts,
+            savg / s_far, smax / s_far, smin / s_far, scf_exact);
+
     return 0;
 }
