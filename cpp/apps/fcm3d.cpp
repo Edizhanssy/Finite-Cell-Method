@@ -29,7 +29,7 @@ int main() {
     // Dirichlet Boundary Conditions
     fcm::DirichletBC left;
     left.pred  = [](const fcm::Vec3& x) { return std::fabs(x[0]) < 1e-12; };
-    left.value = [](const fcm::Vec3&, int) { return 0.0; };#
+    left.value = [](const fcm::Vec3&, int) { return 0.0; };
 
     fcm::DirichletBC right;
     right.pred  = [&](const fcm::Vec3& x) { return std::fabs(x[0] - cfg.hi[0]) < 1e-12; };

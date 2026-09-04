@@ -90,4 +90,44 @@ Vec3 displacement_at(const Config3D& cfg, const Mesh3D& m,
     throw std::runtime_error("displacement_at: point is not in the domain");
 }
 
+    std::array<double, 6> strain_at(const Config3D& cfg, const Mesh3D& m,
+                                    const std::vector<double>& u, const Vec3& x) {
+    const std::vector<Mode3D> modes = enumerate_modes(cfg.p);
+
+    for (std::size_t e = 0; e < m.cells.size(); ++e) {
+        const Box& b = m.cells[e].box;
+        bool in = true;
+        for (int d = 0; d < 3; ++d) {
+            const std::size_t s = static_cast<std::size_t>(d);
+            if (x[s] < b.lo[s] - 1e-12 || x[s] > b.hi[s] + 1e-12) { in = false; break; }
+        }
+        if (!in) continue;
+
+        Vec3 xi{}, jac{};
+        for (int d = 0; d < 3; ++d) {
+            const std::size_t s = static_cast<std::size_t>(d);
+            xi[s]  = 2.0 * (x[s] - b.lo[s]) / (b.hi[s] - b.lo[s]) - 1.0;
+            jac[s] = 0.5 * (b.hi[s] - b.lo[s]);
+        }
+
+        const ShapeValues3D sv = shape_3d(cfg.p, modes, xi[0], xi[1], xi[2]);
+        std::vector<double> B;
+        strain_displacement(sv, jac, B);
+
+        const std::size_t ncol = 3 * modes.size();
+        std::array<double, 6> eps{};
+        for (std::size_t row = 0; row < 6; ++row) {
+            double v = 0.0;
+            for (std::size_t a = 0; a < modes.size(); ++a)
+                for (int d = 0; d < 3; ++d)
+                    v += B[row * ncol + 3 * a + static_cast<std::size_t>(d)]
+                       * u[static_cast<std::size_t>(3 * m.ltog[e][a] + d)];
+            eps[row] = v;
+        }
+        return eps;
+    }
+    throw std::runtime_error("strain_at: node is not on an cell!");
+}
+
+
 }  // namespace fcm

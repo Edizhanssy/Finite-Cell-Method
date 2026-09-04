@@ -32,4 +32,8 @@ std::vector<Vec3> node_coordinates(const Mesh3D& m, const Config3D& cfg);
 Vec3 displacement_at(const Config3D& cfg, const Mesh3D& m,
                      const std::vector<double>& u, const Vec3& x);
 
+
+std::array<double, 6> strain_at(const Config3D& cfg, const Mesh3D& m,
+                                const std::vector<double>& u, const Vec3& x);
+
 }  // namespace fcm

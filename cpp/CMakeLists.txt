@@ -42,6 +42,9 @@ target_link_libraries(fcm1d PRIVATE fcm1d_lib)
 add_executable(fcm3d apps/fcm3d.cpp)
 target_link_libraries(fcm3d PRIVATE fcm3d_lib)
 
+add_executable(fcm3d_sphere apps/fcm3d_sphere.cpp)
+target_link_libraries(fcm3d_sphere PRIVATE fcm3d_lib)
+
 # ---- tests ---------------------------------------------------------------
 
 function(fcm_add_test group name lib)

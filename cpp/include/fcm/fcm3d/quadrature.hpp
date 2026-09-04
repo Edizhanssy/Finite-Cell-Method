@@ -17,7 +17,7 @@ struct CellQuadrature3D {
 };
 
 // Octree leafes tensor-multiplying quadrature.
-// referans solution: sum(w) = 8
+// reference solution: sum(w) = 8
 CellQuadrature3D build_cell_quadrature(const Box& cell, const Config3D& cfg);
 
 inline Vec3 map_to_cell(const Vec3& xi, const Box& cell) {

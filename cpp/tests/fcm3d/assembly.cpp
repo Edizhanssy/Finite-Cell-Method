@@ -170,12 +170,9 @@ int main() {
                 if (modes[m].kind == fcm::ModeKind::Node) surf = std::fmax(surf, v);
             }
         }
-        check(worst_own < 1e-10 * scale, "patch: does not have effect on its own axis, worst_own, 0.0);
+        check(worst_own < 1e-10 * scale, "patch: does not have effect on its own axis, worst_own", 0.0);
         check(surf > 1e-6 * scale,       "patch: effect on the surface",       surf, 0.0);
-        //check(worst_int < 1e-10 * scale, "patch: ic mod tepkisi sifir", worst_int, 0.0);
-        //check(surf > 1e-6 * scale, "patch: yuzeyde tepki var", surf, 0.0);
 
-        // (c) toplam kuvvet dengesi: sum(f) = 0 her yonde
         for (int d = 0; d < 3; ++d) {
             double s = 0.0;
             for (std::size_t m = 0; m < nm; ++m) s += f[3*m + static_cast<std::size_t>(d)];
@@ -186,4 +183,5 @@ int main() {
     if (checked < 15) { std::printf("FAILED  assembly3d: only %d checks\n", checked); return 2; }
     std::printf("%s  assembly3d: %d checks, %d failures\n", failed ? "FAILED" : "PASSED", checked, failed);
     return failed ? 1 : 0;
+
 }
